@@ -84,6 +84,12 @@ class GloVe(object):
         with open(dict, "rU") as input:
             self.dict = json.load(input)
 
+    def graph_cosine_range(self, path, wordmap,
+                           start, end, step):
+
+        for x in range(start, end, step):
+            generate_cosine_graph(wordmap, x)
+
     def neighbor_density_cos(self, dx, word, corpus):
         if word not in self.dict:
             return None
@@ -149,31 +155,15 @@ def load_glove_pretrain(path):
     dct = {}
     vectors = array.array('d')
 
-    # with open(path, 'rU') as input:
-    #     for i, line in enumerate(input):
-    #         tokens = line.split()
-    #
-    #         word = tokens[0]
-    #         entries = tokens[1:]
-    #
-    #         dct[word] = i
-    #         vectors.extend(float(x) for x in entries)
-    #         # if i > 10000:
-    #         #     break
+    with open(path, 'rU') as input:
+        for i, line in enumerate(input):
+            tokens = line.split()
 
+            word = tokens[0]
+            entries = tokens[1:]
 
-    i = 0
-    for line in fileinput.input([path]):
-        tokens = line.split()
-
-        word = tokens[0]
-        entries = tokens[1:]
-
-        dct[word] = i
-        vectors.extend(float(x) for x in entries)
-        i+=1
-
-
+            dct[word] = i
+            vectors.extend(float(x) for x in entries)
 
     dim = len(entries)
     no_vectors = len(dct)
@@ -195,7 +185,6 @@ def top_n_words(wordmap, n):
 
     wordlist.sort(key = lambda x: len(x[1]), reverse=True)
     return wordlist[:n]
-
 
 
 def generate_cosine_graph(wordmap, threshold):
@@ -251,23 +240,30 @@ def generate_euclid_graph(wordmap, threshold):
             json.dump(worddensity[key], output, indent=4, sort_keys=True)
 
 
+def create_numpy_from_glove(input, dict_out, vec_out):
+    """
+
+    This may take just short of forever, and potentially
+    blow up your computer. Use with caution, don't be a hero.
+
+    :param input: path to glove pretrained vectors
+    :param dict_out: output path of dictionary
+    :param vec_out: output path of numpy array
+    :return:
+    """
+    glove = load_glove_pretrain(input)
+    glove.save_model(dict_out, vec_out)
+
+def calculate_cosine_range(output, model, start, end, step):
+
+    for x in range(start, end, step):
+        generate_cosine_graph(model ,)
+
+
+
 if __name__ == "__main__":
 
     path = sys.argv[1]
-
-
-
-
-    #
-    # path = "data/model/glove.42B.300d.txt"
-    # glove = load_glove_pretrain(path)
-    #
-    # glove.save_model("dict_glove_42b_300", "vectors_glove_42b_300")
-
-
-
-
-
 
 
     glove = GloVe()
@@ -282,20 +278,6 @@ if __name__ == "__main__":
 
 
     generate_cosine_graph(wordmap, 0.62)
-
-    #generate_euclid_graph(wordmap, 0.9)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     # with open("data/density_euc_1/density6", "rU") as input:

@@ -14,11 +14,6 @@ class WordBank(object):
         return result[:n]
 
 
-# def top_n_month(data, month, n):
-#     result = data.sort_values(by=month, ascending=False)
-#     return result[:n]
-
-
 
 if __name__ == "__main__":
 

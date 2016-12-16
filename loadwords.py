@@ -2,7 +2,15 @@ import csv
 import sys
 import os
 
+
 def load_basic_levels(path, wordmap):
+    """
+    wordmap is a dict of month to list-of-words mappings
+
+    :param path:
+    :param wordmap:
+    :return:
+    """
     with open(path, "rU") as input:
         key = int(os.path.basename(path)[:2])
         reader = csv.reader(input)

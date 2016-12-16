@@ -5,6 +5,11 @@ import os
 import ipdb; ipdb.set_trace()
 
 
+
+def top_dense():
+    print
+
+
 def rank(path=""):
     if path:
         input_folder = path
@@ -35,6 +40,8 @@ def rank(path=""):
                     with open(os.path.join(final_out_folder, file), "wb") as output:
                         for word in just_words:
                             output.write("{} {}\n".format(word[0], word[1]))
+
+
 
 
 #rank()
