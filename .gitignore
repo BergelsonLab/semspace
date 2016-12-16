@@ -1,0 +1,9 @@
+data
+rsemspace
+.ipynb_checkpoints
+.idea
+
+
+
+*.pyc
+*.pdf
