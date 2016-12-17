@@ -1,6 +1,7 @@
 import csv
 import sys
 import os
+import pandas
 
 
 def load_basic_levels(path, wordmap):
@@ -11,17 +12,10 @@ def load_basic_levels(path, wordmap):
     :param wordmap:
     :return:
     """
-    with open(path, "rU") as input:
-        key = int(os.path.basename(path)[:2])
-        reader = csv.reader(input)
-        reader.next()
-
-        if key not in wordmap:
-            wordmap[key] = []
-
-        for row in reader:
-            wordmap[key].append(row[1])
-
+    key = int(os.path.basename(path)[:2])
+    words = pandas.read_csv(path)["word"]
+    if key not in wordmap:
+        wordmap[key] = set(words.tolist())
 
 if __name__ == "__main__":
 

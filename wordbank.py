@@ -1,10 +1,12 @@
 import sys
+import os
 import pandas
 
 class WordBank(object):
 
     def __init__(self, input):
-        self.data = self.load_file(input)
+        self.input_file = input
+        self.load_file(input)
 
     def load_file(self, input):
         self.data = pandas.read_csv(input)
@@ -12,6 +14,13 @@ class WordBank(object):
     def top_n_month(self, month, n):
         result = self.data.sort_values(by=month, ascending=False)
         return result[:n]
+
+    def wordmap(self):
+        wordmap = {}
+        data_set_name = os.path.basename(self.input_file).replace(".csv", "")
+        wordmap[data_set_name] = self.data["definition"].values
+
+        return wordmap
 
 
 

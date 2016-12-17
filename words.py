@@ -3,7 +3,6 @@ import sys
 import json
 import operator
 import os
-import fileinput
 import numpy as np
 
 import loadwords
@@ -69,10 +68,11 @@ def filter_plurals(words):
     return results
 
 class GloVe(object):
-    def __init__(self):
+    def __init__(self, vocab, vectors):
         self.dim = None
         self.dict = None
         self.vectors = None
+        self.load_model(vocab, vectors)
 
     def save_model(self, dict, vectors):
         np.save(vectors, self.vectors)
@@ -84,11 +84,11 @@ class GloVe(object):
         with open(dict, "rU") as input:
             self.dict = json.load(input)
 
-    def graph_cosine_range(self, path, wordmap,
-                           start, end, step):
-
-        for x in range(start, end, step):
-            generate_cosine_graph(wordmap, x)
+    def graph_cosine_range(self, output_path,
+                           wordmap, start, end,
+                           step):
+        for x in np.arange(start, end, step):
+            generate_cosine_graphs(self, path, wordmap, x)
 
     def neighbor_density_cos(self, dx, word, corpus):
         if word not in self.dict:
@@ -187,7 +187,41 @@ def top_n_words(wordmap, n):
     return wordlist[:n]
 
 
-def generate_cosine_graph(wordmap, threshold):
+def generate_cosine_graphs(model, path, wordmap, threshold):
+    for key, value in wordmap.items():
+        density_map = {}
+
+        aggregate = []
+        for word in value:
+            if not isinstance(word, basestring):
+                continue
+            reformatted = word.lower().replace("+", "-")
+            if reformatted not in filter_words+colors+numbers:
+                aggregate.append(reformatted)
+
+        # aggregate = filter_plurals(aggregate)
+        # words = set(aggregate)
+        words = aggregate
+
+        for word in words:
+            density_map[word] = model.neighbor_density_cos(threshold, word, words)
+
+        output_path = os.path.join("data", "output",
+                                   path, "semgraphs",
+                                   "cosine_{}".format(threshold))
+
+        if not os.path.isdir(output_path):
+            os.makedirs(output_path)
+
+        output_file = os.path.join(output_path, "semgraph_{}".format(key))
+
+
+        with open(output_file, "wb") as output:
+            json.dump(density_map, output, indent=4, sort_keys=True)
+
+
+
+def generate_euclid_graph(model, path, wordmap, threshold):
     worddensity = {}
 
     for key, value in wordmap.items():
@@ -200,43 +234,22 @@ def generate_cosine_graph(wordmap, threshold):
             reformatted = word.lower().replace("+", "-")
             if reformatted not in filter_words+colors+numbers:
                 aggregate.append(reformatted)
-
         aggregate = filter_plurals(aggregate)
         words = set(aggregate)
 
         for word in words:
-            worddensity[key][word] = glove.neighbor_density_cos(threshold, word, words)
+            worddensity[key][word] = model.neighbor_density_euclid(threshold, word, words)
 
-        if not os.path.isdir("data/semgraphs/cosine_{}".format(threshold)):
-            os.makedirs("data/semgraphs/cosine_{}".format(threshold))
+        output_path = os.path.join("data", "output",
+                                   path, "semgraphs",
+                                   "euclid_{}".format(threshold))
 
-        with open("data/semgraphs/cosine_{}/semgraph_{}".format(threshold, key), "wb") as output:
-            json.dump(worddensity[key], output, indent=4, sort_keys=True)
+        if not os.path.isdir(output_path):
+            os.makedirs(output_path)
 
+        output_file = os.path.join(output_path, "semgraph_{}".format(key))
 
-def generate_euclid_graph(wordmap, threshold):
-    worddensity = {}
-
-    for key, value in wordmap.items():
-        if key not in worddensity:
-            worddensity[key] = {}
-        aggregate = []
-        for word in value:
-            #aggregate += filter(lambda x: x not in filter_words+colors+numbers, word.lower().split("+"))
-
-            reformatted = word.lower().replace("+", "-")
-            if reformatted not in filter_words+colors+numbers:
-                aggregate.append(reformatted)
-        aggregate = filter_plurals(aggregate)
-        words = set(aggregate)
-
-        for word in words:
-            worddensity[key][word] = glove.neighbor_density_euclid(threshold, word, words)
-
-        if not os.path.isdir("data/semgraphs/euclid_{}".format(threshold)):
-            os.makedirs("data/semgraphs/euclid_{}".format(threshold))
-
-        with open("data/semgraphs/euclid_{}/semgraph_{}".format(threshold, key), "wb") as output:
+        with open(output_file, "wb") as output:
             json.dump(worddensity[key], output, indent=4, sort_keys=True)
 
 
@@ -254,20 +267,13 @@ def create_numpy_from_glove(input, dict_out, vec_out):
     glove = load_glove_pretrain(input)
     glove.save_model(dict_out, vec_out)
 
-def calculate_cosine_range(output, model, start, end, step):
-
-    for x in range(start, end, step):
-        generate_cosine_graph(model ,)
-
-
 
 if __name__ == "__main__":
 
     path = sys.argv[1]
 
 
-    glove = GloVe()
-    glove.load_model("data/model/dict_glove_42b_300", "data/model/vectors_glove_42b_300.npy")
+    glove = GloVe("data/model/dict_glove_42b_300", "data/model/vectors_glove_42b_300.npy")
 
     wordmap = {}
 
@@ -277,8 +283,8 @@ if __name__ == "__main__":
 
 
 
-    generate_cosine_graph(wordmap, 0.62)
-
+    glove.graph_cosine_range("test", wordmap=wordmap,
+                             start=0.5, end=0.51, step=0.1)
 
     # with open("data/density_euc_1/density6", "rU") as input:
     #     month6 = json.load(input)

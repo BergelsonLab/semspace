@@ -2,17 +2,16 @@ import words
 import json
 import os
 
-import ipdb; ipdb.set_trace()
-
-
-
 def top_dense():
     print
 
+def rank_density(input_path="", output_path=""):
+    if input_path and output_path:
+        input_folder = input_path
+        output_folder = output_path
 
-def rank(path=""):
-    if path:
-        input_folder = path
+    elif input_path and not output_path:
+        input_folder = input_path
         output_folder = os.path.join("data/ranked_out", os.path.basename(input_folder))
     else:
         input_folder = "data/semgraphs"
@@ -22,13 +21,13 @@ def rank(path=""):
         for file in files:
             if not file.startswith("."):
                 with open(os.path.join(root, file), "rU") as input:
-                    monthwords = json.load(input)
-                    top_10 = words.top_n_words(monthwords, 50)
+                    semgraph = json.load(input)
+                    top_10 = words.top_n_words(semgraph, 50)
                     just_words = []
                     for entry in top_10:
                         just_words.append((entry[0], len(entry[1])))
 
-                    if not path:
+                    if not input_path:
                         final_out_folder = root.replace(input_folder, output_folder)
                     else:
                         final_out_folder = output_folder
@@ -42,8 +41,4 @@ def rank(path=""):
                             output.write("{} {}\n".format(word[0], word[1]))
 
 
-
-
-#rank()
-
-rank(path="data/semgraphs/cosine_0.3")
+# rank(path="data/semgraphs/cosine_0.3")
