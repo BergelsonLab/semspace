@@ -88,7 +88,7 @@ class GloVe(object):
                            wordmap, start, end,
                            step):
         for x in np.arange(start, end, step):
-            generate_cosine_graphs(self, path, wordmap, x)
+            generate_cosine_graphs(self, output_path, wordmap, x)
 
     def neighbor_density_cos(self, dx, word, corpus):
         if word not in self.dict:

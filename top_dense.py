@@ -31,7 +31,6 @@ def rank_density(input_path="", output_path=""):
                         final_out_folder = root.replace(input_folder, output_folder)
                     else:
                         final_out_folder = output_folder
-                        print final_out_folder
 
                     if not os.path.isdir(final_out_folder):
                         os.makedirs(final_out_folder)
