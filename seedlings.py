@@ -17,14 +17,17 @@ def load_basic_levels(path, wordmap):
     if key not in wordmap:
         wordmap[key] = set(words.tolist())
 
+def load_seedlings(path):
+    wordmap = {}
+
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            load_basic_levels(os.path.join(root, file), wordmap)
+
 if __name__ == "__main__":
 
     start_dir = sys.argv[1]
 
-    wordmap = {}
-
-    for root, dirs, files in os.walk(start_dir):
-        for file in files:
-            load_basic_levels(os.path.join(root, file), wordmap)
+    seedlings_wordmap = load_seedlings(start_dir)
 
     print

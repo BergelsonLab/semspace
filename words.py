@@ -3,9 +3,10 @@ import sys
 import json
 import operator
 import os
+
 import numpy as np
 
-import loadwords
+import seedlings
 
 
 filter_words = ["and", "are", "it", "that",
@@ -196,11 +197,10 @@ def generate_cosine_graphs(model, path, wordmap, threshold):
             if not isinstance(word, basestring):
                 continue
             reformatted = word.lower().replace("+", "-")
+
             if reformatted not in filter_words+colors+numbers:
                 aggregate.append(reformatted)
 
-        # aggregate = filter_plurals(aggregate)
-        # words = set(aggregate)
         words = aggregate
 
         for word in words:
@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
     for root, dirs, files in os.walk(path):
         for file in files:
-            loadwords.load_basic_levels(os.path.join(root, file), wordmap)
+            seedlings.load_basic_levels(os.path.join(root, file), wordmap)
 
 
 

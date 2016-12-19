@@ -1,6 +1,22 @@
 import sys
 import os
+
 import pandas
+
+
+filter_categories = [
+    "action_words", "games_routines",
+    "question_words", "pronouns",
+    "descriptive_words", "helping_verbs",
+    "connecting_words", "quantifiers",
+    "time_words", "locations"
+]
+
+filter_types = [
+    "complexity", "word_endings_verbs",
+    "word_forms_verbs", "combine",
+    "how_use_words"
+]
 
 class WordBank(object):
 
@@ -12,17 +28,37 @@ class WordBank(object):
         self.data = pandas.read_csv(input)
 
     def top_n_month(self, month, n):
-        result = self.data.sort_values(by=month, ascending=False)
+        result = self.data.sort_values(by=month, ascending=False).tolist()
         return result[:n]
 
     def wordmap(self):
         wordmap = {}
-        data_set_name = os.path.basename(self.input_file).replace(".csv", "")
-        wordmap[data_set_name] = self.data["definition"].values
+        dataset_name = os.path.basename(self.input_file).replace(".csv", "")
 
+        words = []
+        for index, word in self.data.iterrows():
+            if word['category'] not in filter_categories:
+                if word['type'] not in filter_types:
+                    the_word = filter_parens(word['definition'])
+                    if "/" in the_word:
+                        split_word = the_word.split('/')
+                        for element in split_word:
+                            element = element.replace("*", "")
+                            words.append(element)
+                    else:
+                        the_word = the_word.replace("*", "")
+                        words.append(the_word)
+
+        wordmap[dataset_name] = words
         return wordmap
 
 
+def filter_parens(word):
+    index = word.find("(")
+    if index != -1:
+        return word[:index]
+    else:
+        return word
 
 if __name__ == "__main__":
 
@@ -30,22 +66,6 @@ if __name__ == "__main__":
 
     wordbank = WordBank(input_file)
 
-    data = pandas.read_csv(input_file)
-
-    all_the_words = data["definition"].values
-
-
-
-    top_16 = wordbank.top_n_month("16", 20).definition
-    top_17 = wordbank.top_n_month("17", 20).definition
-    top_18 = wordbank.top_n_month("18", 20).definition
-    top_19 = wordbank.top_n_month("19", 20).definition
-    top_20 = wordbank.top_n_month("20", 20).definition
-    top_21 = wordbank.top_n_month("21", 20).definition
-    top_22 = wordbank.top_n_month("22", 20).definition
-    top_23 = wordbank.top_n_month("23", 20).definition
-
-
-    print top_16.values
+    wordmap = wordbank.wordmap()
 
     print
