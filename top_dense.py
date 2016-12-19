@@ -1,9 +1,9 @@
 import words
 import json
 import os
+import csv
 
-def top_dense():
-    print
+
 
 def rank_density(input_path="", output_path=""):
     if input_path and output_path:
@@ -22,22 +22,21 @@ def rank_density(input_path="", output_path=""):
             if not file.startswith("."):
                 with open(os.path.join(root, file), "rU") as input:
                     semgraph = json.load(input)
-                    top_10 = words.top_n_words(semgraph, 50)
+                    top_n = words.top_n_words(semgraph, 50)
                     just_words = []
-                    for entry in top_10:
+                    for entry in top_n:
                         just_words.append((entry[0], len(entry[1])))
 
                     if not input_path:
                         final_out_folder = root.replace(input_folder, output_folder)
                     else:
-                        final_out_folder = output_folder
+                        final_out_folder = os.path.join(output_folder, os.path.basename(root))
 
                     if not os.path.isdir(final_out_folder):
                         os.makedirs(final_out_folder)
 
-                    with open(os.path.join(final_out_folder, file), "wb") as output:
+                    final_out = os.path.join(final_out_folder, file+".csv")
+                    with open(final_out, "wb") as output:
+                        writer = csv.writer(output)
                         for word in just_words:
-                            output.write("{} {}\n".format(word[0], word[1]))
-
-
-# rank(path="data/semgraphs/cosine_0.3")
+                            writer.writerow([word[0], word[1]])
