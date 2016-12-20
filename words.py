@@ -55,6 +55,17 @@ numbers = [
     ]
 
 
+
+
+class SemanticGraph(object):
+    def __init__(self, source, sim_func, thresh, path):
+        self.source = source
+        self.sim_func = sim_func
+        self.threshold = thresh
+        self.path = path
+
+
+
 def filter_plurals(words):
     results = []
     for word in words:
