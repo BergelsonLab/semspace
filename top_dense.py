@@ -5,7 +5,7 @@ import csv
 
 import networkx as nx
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-from plotly.graph_objs import *
+import plotly.graph_objs as go
 
 def rank_density(input_path="", output_path=""):
     if input_path and output_path:
@@ -61,10 +61,10 @@ def plot_semantic_graph(sem_graph):
     pos = nx.fruchterman_reingold_layout(G)
     nx.set_node_attributes(G, 'pos', pos)
 
-    edge_trace = Scatter(
+    edge_trace = go.Scatter(
         x=[],
         y=[],
-        line=Line(width=0.3, color='#888'),
+        line=go.Line(width=0.3, color='#888'),
         hoverinfo='none',
         mode='lines')
 
@@ -74,13 +74,13 @@ def plot_semantic_graph(sem_graph):
         edge_trace['x'] += [x0, x1, None]
         edge_trace['y'] += [y0, y1, None]
 
-    node_trace = Scatter(
+    node_trace = go.Scatter(
         x=[],
         y=[],
         text=[],
         mode='markers',
         hoverinfo='text',
-        marker=Marker(
+        marker=go.Marker(
             showscale=True,
             # colorscale options
             # 'Greys' | 'Greens' | 'Bluered' | 'Hot' | 'Picnic' | 'Portland' |
@@ -103,12 +103,12 @@ def plot_semantic_graph(sem_graph):
         node_trace['x'].append(x)
         node_trace['y'].append(y)
         node_trace['marker']['color'].append(len(G.neighbors(node)))
-        node_trace['text'].append('{}<br># connections: {}'.format(the_node['word'], len(G.neighbors(node))))
+        node_trace['text'].append('{}<br># edges: {}'.format(the_node['word'], len(G.neighbors(node))))
 
     fig_text = u"{} {}({}) {} {}".format(sem_graph.source, sem_graph.sim_func,
                                          u"\u03B8",  u"\u2265",  1 - sem_graph.threshold)
-    fig = Figure(data=Data([edge_trace, node_trace]),
-                 layout=Layout(
+    fig = go.Figure(data=go.Data([edge_trace, node_trace]),
+                 layout=go.Layout(
                      title='<br>Semantic Graph',
                      titlefont=dict(size=16),
                      showlegend=False,
@@ -122,7 +122,37 @@ def plot_semantic_graph(sem_graph):
                          showarrow=False,
                          xref="paper", yref="paper",
                          x=0.005, y=-0.002)],
-                     xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
-                     yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False)))
+                     xaxis=go.XAxis(showgrid=False, zeroline=False, showticklabels=False),
+                     yaxis=go.YAxis(showgrid=False, zeroline=False, showticklabels=False)))
 
     return fig
+
+
+def plot_edges_vs_month_compr(data, month):
+    trace = go.Scatter(
+        x=data['edges'],
+        y=data[month],
+        text=data['word'],
+        mode='markers'
+    )
+
+    layout = go.Layout(
+        title='Semantic Density vs. Month {} Comprehension Score'.format(month),
+        hovermode='closest',
+        xaxis=dict(
+            title='Edges',
+            ticklen=5,
+            zeroline=False,
+            gridwidth=2,
+        ),
+        yaxis=dict(
+            title='WordBank Comprehension Score',
+            ticklen=5,
+            gridwidth=2,
+        ),
+        showlegend=False
+    )
+    data = [trace]
+    fig = go.Figure(data=data, layout=layout)
+    iplot(fig, filename='basic-scatter')
+

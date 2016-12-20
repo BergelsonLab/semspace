@@ -5,8 +5,10 @@ import operator
 import os
 
 import numpy as np
+import pandas as pd
 
 import seedlings
+from wordbank import *
 
 
 filter_words = ["and", "are", "it", "that",
@@ -58,11 +60,26 @@ numbers = [
 
 
 class SemanticGraph(object):
-    def __init__(self, source, sim_func, thresh, path):
+    def __init__(self, source, sim_func, thresh, path, wb):
         self.source = source
         self.sim_func = sim_func
         self.threshold = thresh
         self.path = path
+        self.wb = wb
+        self.load_graph()
+
+    def load_graph(self):
+        with open(self.path, "rU") as input:
+            self.graph = json.load(input)
+
+    def top_n_dense(self, n):
+        top_words = top_n_words(self.graph, n)
+        top_words = [(x[0], len(x[1])) for x in top_words]
+        graph_df = pd.DataFrame(data=top_words, columns=["word", "edges"])
+        result = pd.merge(graph_df, self.wb.data, left_on='word', right_on='definition')
+        return result
+
+
 
 
 
@@ -78,6 +95,8 @@ def filter_plurals(words):
             else:
                 results.append(word)
     return results
+
+
 
 class GloVe(object):
     def __init__(self, vocab, vectors):
@@ -284,20 +303,29 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
 
-    glove = GloVe("data/model/dict_glove_42b_300", "data/model/vectors_glove_42b_300.npy")
-
-    wordmap = {}
-
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            seedlings.load_basic_levels(os.path.join(root, file), wordmap)
-
-
-
-    glove.graph_cosine_range("test", wordmap=wordmap,
-                             start=0.5, end=0.51, step=0.1)
+    # glove = GloVe("data/model/dict_glove_42b_300", "data/model/vectors_glove_42b_300.npy")
+    #
+    # wordmap = {}
+    #
+    # for root, dirs, files in os.walk(path):
+    #     for file in files:
+    #         seedlings.load_basic_levels(os.path.join(root, file), wordmap)
+    #
+    #
+    #
+    # glove.graph_cosine_range("test", wordmap=wordmap,
+    #                          start=0.5, end=0.51, step=0.1)
 
     # with open("data/density_euc_1/density6", "rU") as input:
     #     month6 = json.load(input)
     #
     # top_10 = top_n_words(month6, 10)
+
+    wordbank_english = WordBank(input="data/wb_cdi/wb_eng.csv")
+
+    graph_path = "data/output/english_wordbank/semgraphs/cosine_0.4/semgraph_wb_eng"
+
+    graph = SemanticGraph(source="WordBank", sim_func="cos",
+                        thresh=0.45, path=graph_path, wb=wordbank_english)
+
+    top_n = graph.top_n_dense(10)

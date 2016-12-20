@@ -31,6 +31,9 @@ class WordBank(object):
         result = self.data.sort_values(by=month, ascending=False).tolist()
         return result[:n]
 
+    def sorted(self, month):
+        return self.data.sort_values(by=month, ascending=False)
+
     def wordmap(self):
         wordmap = {}
         dataset_name = os.path.basename(self.input_file).replace(".csv", "")
