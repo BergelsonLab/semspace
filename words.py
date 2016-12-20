@@ -72,7 +72,9 @@ class SemanticGraph(object):
         with open(self.path, "rU") as input:
             self.graph = json.load(input)
 
-    def top_n_dense(self, n):
+    def top_n_dense(self, n=0, all=False):
+        if all:
+            n = len(self.graph)
         top_words = top_n_words(self.graph, n)
         top_words = [(x[0], len(x[1])) for x in top_words]
         graph_df = pd.DataFrame(data=top_words, columns=["word", "edges"])
