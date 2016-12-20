@@ -64,7 +64,7 @@ def plot_semantic_graph(sem_graph):
     edge_trace = Scatter(
         x=[],
         y=[],
-        line=Line(width=0.5, color='#888'),
+        line=Line(width=0.3, color='#888'),
         hoverinfo='none',
         mode='lines')
 
@@ -105,7 +105,8 @@ def plot_semantic_graph(sem_graph):
         node_trace['marker']['color'].append(len(G.neighbors(node)))
         node_trace['text'].append('{}<br># connections: {}'.format(the_node['word'], len(G.neighbors(node))))
 
-    fig_text = "{} {}() > {}".format(sem_graph.source, sem_graph.sim_func, 1 - sem_graph.threshold)
+    fig_text = u"{} {}({}) {} {}".format(sem_graph.source, sem_graph.sim_func,
+                                         u"\u03B8",  u"\u2265",  1 - sem_graph.threshold)
     fig = Figure(data=Data([edge_trace, node_trace]),
                  layout=Layout(
                      title='<br>Semantic Graph',
