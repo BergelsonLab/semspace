@@ -55,7 +55,7 @@ def plot_semantic_graph(sem_graph):
         semgraph = json.load(input)
 
     N = len(semgraph)
-    G = nx.MultiGraph()
+    G = nx.Graph()
 
     for key in semgraph:
         G.add_node(key, word=key, size=1)
@@ -63,7 +63,8 @@ def plot_semantic_graph(sem_graph):
     for key, value in semgraph.items():
         if value:
             for element in value:
-                G.add_edge(key, element[0])
+                if element[0] not in G.neighbors(key):
+                    G.add_edge(key, element[0])
 
     pos = nx.fruchterman_reingold_layout(G)
     nx.set_node_attributes(G, 'pos', pos)
@@ -98,13 +99,14 @@ def plot_semantic_graph(sem_graph):
             size=10,
             colorbar=dict(
                 thickness=15,
-                title='# Connections',
+                title='# Edges',
                 xanchor='left',
                 titleside='right'
             ),
             line=dict(width=2)))
 
     for node in G.nodes():
+        # print "{} : {}".format(node, G.neighbors(node))
         the_node = G.node[node]
         x, y = G.node[node]['pos']
         node_trace['x'].append(x)
@@ -116,7 +118,7 @@ def plot_semantic_graph(sem_graph):
                                          u"\u03B8",  u"\u2265",  1 - sem_graph.threshold)
     fig = go.Figure(data=go.Data([edge_trace, node_trace]),
                  layout=go.Layout(
-                     title='<br>Semantic Graph',
+                     title=u'<br>{}'.format(fig_text),
                      titlefont=dict(size=16),
                      showlegend=False,
                      width=650,
@@ -124,7 +126,7 @@ def plot_semantic_graph(sem_graph):
                      hovermode='closest',
                      margin=dict(b=20, l=5, r=5, t=40),
                      annotations=[dict(
-                         text=fig_text,
+                         text="",
                          # Python code: <a href='https://plot.ly/ipython-notebooks/network-graphs/'> https://plot.ly/ipython-notebooks/network-graphs/</a>",
                          showarrow=False,
                          xref="paper", yref="paper",
