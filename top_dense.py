@@ -2,10 +2,17 @@ import words
 import json
 import os
 import csv
+import re
 
 import networkx as nx
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import plotly.graph_objs as go
+
+from scipy import stats
+
+from words import *
+
+cos_regx = re.compile('(cosine_0)(\\.)(\\d+)')
 
 def rank_density(input_path="", output_path=""):
     if input_path and output_path:
@@ -155,4 +162,32 @@ def plot_edges_vs_month_compr(data, month):
     data = [trace]
     fig = go.Figure(data=data, layout=layout)
     iplot(fig, filename='basic-scatter')
+
+
+def top_correlation_threshold(path, wb, wb_month, source):
+    thresh = 0
+    top_graph = None
+    top_corr = 0
+    top_p = 0
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if not file.startswith("."):
+                cos_result = cos_regx.search(root)
+                if cos_result:
+                    thresh = float("0." + cos_result.group(3))
+
+                graph = SemanticGraph(source=source, sim_func="cos",
+                                      thresh=thresh, path=os.path.join(root, file),
+                                      wb=wb)
+                top_n = graph.top_n_dense(all=True)
+                corr_coef, p = stats.pearsonr(top_n['edges'], top_n[wb_month])
+                if corr_coef > top_corr:
+                    top_corr = corr_coef
+                    top_p = p
+                    top_graph = graph
+
+    return top_graph, top_corr, top_p
+
+
+
 
