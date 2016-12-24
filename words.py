@@ -225,7 +225,7 @@ def generate_cosine_graphs(model, path, wordmap, threshold):
         density_map = {}
 
         aggregate = []
-        for word in value:
+        for word in value.unique():
             if not isinstance(word, basestring):
                 continue
             reformatted = word.lower().replace("+", "-")
