@@ -52,7 +52,7 @@ class WordBank(object):
                         the_word = the_word.replace("*", "")
                         words.append(the_word)
 
-        wordmap[dataset_name] = words
+        wordmap[dataset_name] = pandas.Series(words)
         return wordmap
 
 
