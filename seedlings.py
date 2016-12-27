@@ -7,7 +7,13 @@ from words import *
 
 class Seedlings(object):
     def __init__(self, bl_path):
-        self.data = pandas.read_csv(bl_path)
+        self.data = self.load_data(bl_path)
+
+    def load_data(self, path):
+        df = pandas.read_csv(path)
+        df.basic_level = df.basic_level.str.lower()
+        df['count'] = df.groupby('basic_level')['basic_level'].transform('count')
+        return df
 
     def wordmap(self):
         wordmap = {}
@@ -44,14 +50,14 @@ if __name__ == "__main__":
 
     bl_file = sys.argv[1]
 
-    glove = GloVe(vocab="data/model/dict_glove_42b_300",
-                  vectors="data/model/vectors_glove_42b_300.npy")
+    # glove = GloVe(vocab="data/model/dict_glove_42b_300",
+    #               vectors="data/model/vectors_glove_42b_300.npy")
 
     seedlings = Seedlings(bl_file)
     seedlings_wordmap = seedlings.wordmap()
     # seedlings_wordmap = load_concat_basic_level(bl_file)
 
 
-    glove.graph_cosine_range(output_path="seedlings2", wordmap=seedlings_wordmap,
-                             start=0.4, end=0.41, step=0.01)
+    # glove.graph_cosine_range(output_path="seedlings2", wordmap=seedlings_wordmap,
+    #                          start=0.4, end=0.41, step=0.01)
     print

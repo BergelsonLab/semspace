@@ -56,11 +56,8 @@ numbers = [
     "ten"
     ]
 
-
-
-
 class SemanticGraph(object):
-    def __init__(self, source, sim_func, thresh, path, wb):
+    def __init__(self, path, wb, source=None, sim_func=None, thresh=0.0):
         self.source = source
         self.sim_func = sim_func
         self.threshold = thresh
@@ -75,14 +72,20 @@ class SemanticGraph(object):
     def top_n_dense(self, n=0, all=False):
         if all:
             n = len(self.graph)
-        top_words = top_n_words(self.graph, n)
+        top_words = top_dense_words(self.graph)
         top_words = [(x[0], len(x[1])) for x in top_words]
         graph_df = pd.DataFrame(data=top_words, columns=["word", "edges"])
         result = pd.merge(graph_df, self.wb.data, left_on='word', right_on='definition')
-        return result
+        if all:
+            return result
+        else:
+            return result.sort_values('edges', ascending=False)[:n]
 
-
-
+    def degree_distr(self):
+        dist = {'degree':[len(neighbors)
+                    for key, neighbors in self.graph.items()
+                        if neighbors]}
+        return pd.DataFrame(dist)
 
 
 def filter_plurals(words):
@@ -210,14 +213,13 @@ def load_glove_pretrain(path):
 
 
 
-def top_n_words(wordmap, n):
+def top_dense_words(wordgraph):
     wordlist = [(word, neighbors)
-                for word, neighbors in wordmap.items()
+                for word, neighbors in wordgraph.items()
                     if neighbors is not None
                 ]
-
     wordlist.sort(key = lambda x: len(x[1]), reverse=True)
-    return wordlist[:n]
+    return wordlist
 
 
 def generate_cosine_graphs(model, path, wordmap, threshold):

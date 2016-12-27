@@ -190,6 +190,27 @@ def top_correlation_threshold(path, wb, wb_month, source):
 
     return top_graph, top_corr, top_p
 
+def top_kendall_threshold(path, wb, wb_month, source):
+    thresh = 0
+    top_graph = None
+    top_tau = 0
+    top_p = 0
+    cos_regx = re.compile('(cosine_0)(\\.)(\\d+)')
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if not file.startswith("."):
+                cos_result = cos_regx.search(root)
+                if cos_result:
+                    thresh = float("0." + cos_result.group(3))
 
+                graph = SemanticGraph(source=source, sim_func="cos",
+                                      thresh=thresh, path=os.path.join(root, file),
+                                      wb=wb)
+                top_n = graph.top_n_dense(all=True)
+                tau, p = stats.kendalltau(top_n['edges'], top_n[wb_month])
+                if tau > top_tau:
+                    top_tau = tau
+                    top_p = p
+                    top_graph = graph
 
-
+    return top_graph, top_tau, top_p
