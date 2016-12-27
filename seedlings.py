@@ -19,32 +19,13 @@ class Seedlings(object):
         wordmap = {}
         for month in self.data['month'].unique():
             month_words = self.data.basic_level[self.data.month == month].dropna()
-            month_words = month_words[month_words != "***FIX ME***"]
+            month_words = month_words[month_words != "***fix me***"]
             wordmap[month] = month_words
+        all_words = self.data.basic_level.dropna()
+        all_words = all_words[all_words != "***fix me***"]
+        wordmap['all'] = all_words
         return wordmap
 
-
-
-# def load_basic_levels(path, wordmap):
-#     """
-#     wordmap is a dict of month to list-of-words mappings
-#
-#     :param path:
-#     :param wordmap:
-#     :return:
-#     """
-#     key = int(os.path.basename(path)[:2])
-#     words = pandas.read_csv(path)["word"]
-#     if key not in wordmap:
-#         wordmap[key] = set(words.tolist())
-
-
-# def load_seedlings(path):
-#     wordmap = {}
-#
-#     for root, dirs, files in os.walk(path):
-#         for file in files:
-#             load_basic_levels(os.path.join(root, file), wordmap)
 
 if __name__ == "__main__":
 

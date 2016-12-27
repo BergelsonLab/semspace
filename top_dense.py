@@ -5,6 +5,7 @@ import csv
 import re
 
 import networkx as nx
+import powerlaw
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import plotly.graph_objs as go
 
@@ -51,20 +52,20 @@ def rank_density(input_path="", output_path=""):
                             writer.writerow([word[0], word[1]])
 
 def plot_semantic_graph(sem_graph):
-    with open(sem_graph.path, "rU") as input:
-        semgraph = json.load(input)
+    # with open(sem_graph.path, "rU") as input:
+    #     semgraph = json.load(input)
 
-    N = len(semgraph)
-    G = nx.Graph()
+    N = len(sem_graph)
+    G = sem_graph.graph
 
-    for key in semgraph:
-        G.add_node(key, word=key, size=1)
-
-    for key, value in semgraph.items():
-        if value:
-            for element in value:
-                if element[0] not in G.neighbors(key):
-                    G.add_edge(key, element[0])
+    # for key in semgraph:
+    #     G.add_node(key, word=key, size=1)
+    #
+    # for key, value in semgraph.items():
+    #     if value:
+    #         for element in value:
+    #             if element[0] not in G.neighbors(key):
+    #                 G.add_edge(key, element[0])
 
     pos = nx.fruchterman_reingold_layout(G)
     nx.set_node_attributes(G, 'pos', pos)
@@ -214,3 +215,48 @@ def top_kendall_threshold(path, wb, wb_month, source):
                     top_graph = graph
 
     return top_graph, top_tau, top_p
+
+def min_powerlaw_alpha(path, wb):
+    thresh = 0
+    top_graph = None
+    min_alpha = 10000.0
+    final_result = None
+    cos_regx = re.compile('(cosine_0)(\\.)(\\d+)')
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if not file.startswith("."):
+                cos_result = cos_regx.search(root)
+                if cos_result:
+                    thresh = float("0." + cos_result.group(3))
+
+                graph = SemanticGraph(sim_func="cos",
+                                      thresh=thresh, path=os.path.join(root, file),
+                                      wb=wb)
+                degree_dist = graph.degree_distr()
+                result = powerlaw.Fit(degree_dist.dropna().values[:, 0])
+                if result.alpha < min_alpha:
+                    min_alpha = result.alpha
+                    final_result = result
+                    top_graph = graph
+
+    return top_graph, final_result
+
+def kendall_powerlaw_tuples(path, wb, wb_month):
+    results = []
+    cos_regx = re.compile('(cosine_0)(\\.)(\\d+)')
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if not file.startswith("."):
+                cos_result = cos_regx.search(root)
+                if cos_result:
+                    thresh = float("0." + cos_result.group(3))
+
+                graph = SemanticGraph(sim_func="cos",
+                                      thresh=thresh, path=os.path.join(root, file),
+                                      wb=wb)
+                degree_dist = graph.degree_distr()
+                result = powerlaw.Fit(degree_dist.dropna().values[:, 0])
+                top_n = graph.top_n_dense(all=True)
+                tau, p = stats.kendalltau(top_n['edges'], top_n[wb_month])
+                results.append((graph.threshold, result, tau, p))
+    return results

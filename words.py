@@ -6,8 +6,9 @@ import os
 
 import numpy as np
 import pandas as pd
+import networkx as nx
 
-import seedlings
+from seedlings import *
 from wordbank import *
 
 
@@ -63,18 +64,37 @@ class SemanticGraph(object):
         self.threshold = thresh
         self.path = path
         self.wb = wb
-        self.load_graph()
+        self.graph = self.load_graph()
 
     def load_graph(self):
         with open(self.path, "rU") as input:
-            self.graph = json.load(input)
+            json_data = json.load(input)
+            G = nx.Graph()
+
+            for key, neighbors in json_data.items():
+                G.add_node(key, word=key, size=1)
+                if neighbors:
+                    for neighb in neighbors:
+                        G.add_edge(key, neighb[0])
+
+            # for key, value in json_data.items():
+            #     if value:
+            #         for element in value:
+            #             if element[0] not in G.neighbors(key):
+            #                 G.add_edge(key, element[0])
+            return G
 
     def top_n_dense(self, n=0, all=False):
+        words = self.graph.nodes()
         if all:
-            n = len(self.graph)
-        top_words = top_dense_words(self.graph)
-        top_words = [(x[0], len(x[1])) for x in top_words]
-        graph_df = pd.DataFrame(data=top_words, columns=["word", "edges"])
+            n = len(words)
+        if n > len(words):
+            n = len(words)
+
+        words_edges = [(x, len(self.graph.neighbors(x))) for x in words]
+        words_edges.sort(key=lambda x: x[1], reverse=True)
+
+        graph_df = pd.DataFrame(data=words_edges, columns=["word", "edges"])
         result = pd.merge(graph_df, self.wb.data, left_on='word', right_on='definition')
         if all:
             return result
@@ -82,9 +102,9 @@ class SemanticGraph(object):
             return result.sort_values('edges', ascending=False)[:n]
 
     def degree_distr(self):
-        dist = {'degree':[len(neighbors)
-                    for key, neighbors in self.graph.items()
-                        if neighbors]}
+        dist = {'degree': [len(neighbors)
+                           for node, neighbors in self.graph.adjacency_iter()]}
+
         return pd.DataFrame(dist)
 
 
@@ -120,11 +140,12 @@ class GloVe(object):
         with open(dict, "rU") as input:
             self.dict = json.load(input)
 
-    def graph_cosine_range(self, output_path,
-                           wordmap, start, end,
-                           step):
+    def graph_cosine_range(self, output_path,abs_path=False,
+                           wordmap=None, start=0.0, end=0.0,
+                           step=0.0):
         for x in np.arange(start, end, step):
-            generate_cosine_graphs(self, output_path, wordmap, x)
+            generate_cosine_graphs(self, output_path,
+                                   wordmap, x, abs_path)
 
     def neighbor_density_cos(self, dx, word, corpus):
         if word not in self.dict:
@@ -136,24 +157,23 @@ class GloVe(object):
         for corp_word in corpus:
             if corp_word == word:
                 continue
-            for subword in corp_word.split("+"):
-                if subword in self.dict:
-                    if subword == word:
-                        continue
-                    w2_vector = self.vectors[self.dict[subword], :]
+            if corp_word in self.dict:
+                if corp_word == word:
+                    continue
+                w2_vector = self.vectors[self.dict[corp_word], :]
 
-                    w1_vec_norm = np.zeros(w1_vector.shape)
-                    d1 = (np.sum(w1_vector ** 2, ) ** (0.5))
-                    w1_vec_norm = (w1_vector.T / d1).T
+                w1_vec_norm = np.zeros(w1_vector.shape)
+                d1 = (np.sum(w1_vector ** 2, ) ** (0.5))
+                w1_vec_norm = (w1_vector.T / d1).T
 
-                    w2_vec_norm = np.zeros(w2_vector.shape)
-                    d2 = (np.sum(w2_vector ** 2, ) ** (0.5))
-                    w2_vec_norm = (w2_vector.T / d2).T
+                w2_vec_norm = np.zeros(w2_vector.shape)
+                d2 = (np.sum(w2_vector ** 2, ) ** (0.5))
+                w2_vec_norm = (w2_vector.T / d2).T
 
-                    dist = np.dot(w1_vec_norm.T, w2_vec_norm.T)
+                dist = np.dot(w1_vec_norm.T, w2_vec_norm.T)
 
-                    if 1-dist <= dx:
-                        distances.append((subword, dist))
+                if 1-dist <= dx:
+                    distances.append((corp_word, dist))
         return distances
 
     def neighbor_density_euclid(self, dx, word, corpus):
@@ -222,7 +242,7 @@ def top_dense_words(wordgraph):
     return wordlist
 
 
-def generate_cosine_graphs(model, path, wordmap, threshold):
+def generate_cosine_graphs(model, path, wordmap, threshold, abs_path=False):
     for key, value in wordmap.items():
         density_map = {}
 
@@ -237,12 +257,18 @@ def generate_cosine_graphs(model, path, wordmap, threshold):
 
         words = aggregate
 
-        for word in words:
-            density_map[word] = model.neighbor_density_cos(threshold, word, words)
+        for index, word in enumerate(words):
+            if index == len(words)-1:
+                continue
+            density_map[word] = model.neighbor_density_cos(threshold, word, words[index+1:])
 
-        output_path = os.path.join("data", "output",
-                                   path, "semgraphs",
-                                   "cosine_{}".format(threshold))
+        if abs_path:
+            output_path = os.path.join(path, "semgraphs",
+                                       "cosine_{}".format(threshold))
+        else:
+            output_path = os.path.join("data", "output",
+                                        path, "semgraphs",
+                                        "cosine_{}".format(threshold))
 
         if not os.path.isdir(output_path):
             os.makedirs(output_path)
@@ -251,7 +277,7 @@ def generate_cosine_graphs(model, path, wordmap, threshold):
 
 
         with open(output_file, "wb") as output:
-            json.dump(density_map, output, indent=4, sort_keys=True)
+            json.dump(density_map, output, indent=2, sort_keys=True)
 
 
 
@@ -291,7 +317,7 @@ def create_numpy_from_glove(input, dict_out, vec_out):
     """
 
     This may take just short of forever, and potentially
-    blow up your computer. Use with caution, don't be a hero.
+    blow up your computer. Use with caution. Don't be a hero.
 
     :param input: path to glove pretrained vectors
     :param dict_out: output path of dictionary
@@ -304,10 +330,26 @@ def create_numpy_from_glove(input, dict_out, vec_out):
 
 if __name__ == "__main__":
 
-    path = sys.argv[1]
+  #  path = sys.argv[1]
 
 
     # glove = GloVe("data/model/dict_glove_42b_300", "data/model/vectors_glove_42b_300.npy")
+    # wordbank_english = WordBank(input="data/wb_cdi/wb_eng.csv")
+    #
+    # wb_eng_wordmap = wordbank_english.wordmap()
+    #
+    # seedlings = Seedlings('data/seedlings/basic_level_concat.csv')
+    #
+    # glove.graph_cosine_range(output_path="/Volumes/babylab_data/semspace/data/output/seedlings",
+    #                      abs_path=True, wordmap=seedlings.wordmap(),
+    #                      start=0.2, end=1.0, step=0.01)
+
+
+
+
+
+
+
     #
     # wordmap = {}
     #
@@ -325,11 +367,13 @@ if __name__ == "__main__":
     #
     # top_10 = top_n_words(month6, 10)
 
-    wordbank_english = WordBank(input="data/wb_cdi/wb_eng.csv")
+    wordbank = WordBank(input="data/wb_cdi/wb_eng.csv")
 
-    graph_path = "data/output/english_wordbank/semgraphs/cosine_0.4/semgraph_wb_eng"
+    # graph_path = "data/output/english_wordbank/semgraphs/cosine_0.4/semgraph_wb_eng"
 
-    graph = SemanticGraph(source="WordBank", sim_func="cos",
-                        thresh=0.45, path=graph_path, wb=wordbank_english)
+    graph_path = '/Volumes/babylab_data/semspace/data/output/seedlings/semgraphs/cosine_0.31/semgraph_6'
+    graph = SemanticGraph(source="SEEDLings", sim_func="cos",
+                        thresh=0.6, path=graph_path, wb=wordbank)
 
     top_n = graph.top_n_dense(10)
+    graph.degree_distr()
